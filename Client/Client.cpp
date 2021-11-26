@@ -1,16 +1,14 @@
+#ifdef _WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include <iostream>
 
 #ifdef _WIN32
-
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
-
 #else
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,7 +18,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
 #endif
 
 using namespace std;
@@ -43,8 +40,8 @@ bool close_connection(SOCKET);
 
 #else
 
-int open_connection(char*, int);
-bool close_connection(int);
+unsigned int open_connection(char*, int);
+bool close_connection(unsigned int);
 
 #endif
 
@@ -78,7 +75,6 @@ int main(int argc, char* argv[])
 #endif
     s = open_connection(argv[1], port);
     cout << "Connection to server opened successfully !" << endl;
-    cout << endl;
 
     char buffer[MAXDATASIZE];
     int length;
@@ -87,7 +83,7 @@ int main(int argc, char* argv[])
 
     while (1)
     {
-        cout << endl << "> ";
+        cout << endl << argv[1] << "> ";
         cin >> buffer;
 
         if (strcmp(buffer, "EXIT") == 0)
@@ -178,11 +174,11 @@ bool close_connection(SOCKET s)
 
 #else
 
-int open_connection(char* server_address, int connection_port)
+unsigned int open_connection(char* server_address, int connection_port)
 {
 }
 
-bool close_connection(SOCKET s)
+bool close_connection(unsigned int s)
 {
 }
 

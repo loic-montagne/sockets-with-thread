@@ -61,10 +61,10 @@ void usleep(DWORD);
 
 #else
 
-int open_connection(int);
-int accept_connection(int);
-bool close_connection(int, bool);
-void start_client(int, int);
+unsigned int open_connection(int);
+unsigned int accept_connection(unsigned int);
+bool close_connection(unsigned int, bool);
+void start_client(unsigned int, int);
 
 #endif
 
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
 #ifdef _WIN32
     SOCKET connection_socket;
 #else
-    int connection_socket;
+    unsigned int connection_socket;
 #endif
 
     // Ouverture de la socket de connexion
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 #ifdef _WIN32
         SOCKET client_socket;
 #else
-        int client_socket;
+        unsigned int client_socket;
 #endif
 
         // Attente de la connexion client
@@ -262,7 +262,7 @@ void start_client(SOCKET s, int id)
             else if (strcmp(buffer, "MONTH") == 0)
                 strftime(buffer, MAXDATASIZE, "%B", time_info);
             else
-                sprintf(buffer, "Commande non reconnue");
+                sprintf(buffer, "%s is not recognized as a valid command", buffer);
 
             // On envoie le buffer
             print("[C", id, "] Sending message \"", buffer, "\" to client...\n");
@@ -296,20 +296,142 @@ void usleep(DWORD dwMilliseconds)
 
 #else
 
-int open_connection(char* server_address, int connection_port)
+unsigned int open_connection(int connection_port)
 {
+    unsigned int connection_socket;
+    struct sockaddr_in address;
+    int yes = 1;
+
+    // Ouverture de la socket de connexion
+    if ((connection_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Error while creating connection socket : ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configuration de la socket de connexion
+    if (setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        perror("Error while configuring connection socket : ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configuration de l'adresse de transport        
+    address.sin_addr.s_addr = INADDR_ANY;      // adresse, devrait être converti en reseau mais est egal à 0
+    address.sin_family = AF_INET;              // type de la socket
+    address.sin_port = htons(connection_port); // port, converti en reseau
+    bzero(&(address.sin_zero), 8);             // mise a zero du reste de la structure
+
+    // Demarrage du point de connexion : on ajoute l'adresse de transport dans la socket
+    if (bind(connection_socket, (struct sockaddr*)&address, sizeof(struct sockaddr)) == -1) {
+        perror("Error while binding connection socket : ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Attente sur le point de connexion
+    if (listen(connection_socket, BACKLOG) == -1) {
+        perror("Error while listening connection socket : ");
+        exit(EXIT_FAILURE);
+    }
+
+    return connection_socket;
 }
 
-int accept_connection(int s)
+unsigned int accept_connection(unsigned int s)
 {
+    unsigned int client_socket;
+    struct sockaddr_in caddress;
+    int sinsize = sizeof(struct sockaddr_in);
+
+    // Acceptation de la connexion
+    if ((client_socket = accept(connection_socket, (struct sockaddr*)&caddress, &sinsize)) == -1) {
+        perror("Error while accepting client connection : ");
+        return NULL;
+    }
+
+    // Affichage de la connexion
+    print("[+] New connection from ", inet_ntoa(caddress.sin_addr), "\n");
+
+    return client_socket;
 }
 
-bool close_connection(int s, bool notUsed)
+bool close_connection(unsigned int s, bool notUsed)
 {
+    if (close(s) == -1) {
+        perror("Error while closing socket : ");
+        return false;
+    }
+    return true;
 }
 
-void start_client(SOCKET s, int id)
+void start_client(unsigned int s, int id)
 {
+    char buffer[MAXDATASIZE];         // Message recu
+    int length;                       // Taille du message reçu
+    time_t time_value;
+    struct tm* time_info;
+
+    print("[C", id, "] Thread client starts with id=", id, ".\n");
+
+    // Boucle infinie pour le client
+    while (1) {
+
+        // On attend un message du client
+        if ((length = recv(s, buffer, MAXDATASIZE, 0)) == -1)
+        {
+            char error[MAXDATASIZE];
+            sprintf(error, "[C%d] Error while receiving message from client : ", id);
+            perror(error);
+            print("\n");
+            break;
+        }
+
+        // Suppression des retours chariots (\n et \r)
+        while (length > 0 && (buffer[length - 1] == '\n' || buffer[length - 1] == '\r'))
+            length--;
+        // Ajout de backslash zero a la fin pour en faire une chaine de caracteres
+        if (length >= 0 && length < MAXDATASIZE)
+            buffer[length] = '\0';
+
+        // Affichage du message
+        print("[C", id, "] Message received : ", buffer, "\n");
+
+        if (strcmp(buffer, "DISCONNECT") == 0) {
+            break;
+        }
+        else {
+
+            // On recupere l'heure et la date
+            time(&time_value);
+            time_info = localtime(&time_value);
+
+            // Traitement du message reçu
+            if (strcmp(buffer, "DATE") == 0)
+                strftime(buffer, MAXDATASIZE, "%e/%m/%Y", time_info);
+            else if (strcmp(buffer, "DAY") == 0)
+                strftime(buffer, MAXDATASIZE, "%A", time_info);
+            else if (strcmp(buffer, "MONTH") == 0)
+                strftime(buffer, MAXDATASIZE, "%B", time_info);
+            else
+                sprintf(buffer, "%s is not recognized as a valid command", buffer);
+
+            // On envoie le buffer
+            print("[C", id, "] Sending message \"", buffer, "\" to client...\n");
+            if (send(s, buffer, strlen(buffer), 0) == -1) {
+                char error[MAXDATASIZE];
+                sprintf(error, "[C%d] Error while sending message to client : ", id);
+                perror(error);
+                print("\n");
+                break;
+            }
+
+            print("[C", id, "] Message \"", buffer, "\" send to client successfully.\n");
+        }
+    }
+
+    print("[C", id, "] Closing client socket...\n");
+    if (close_connection(s, false))
+        print("[C", id, "] Client socket closed successfully.\n");
+
+    print("[C", id, "] Thread client ends.\n");
 }
 
 #endif
