@@ -141,10 +141,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Client.cpp" />
+    <ClCompile Include="EndPoint.cpp" />
+    <ClCompile Include="Ouput.cpp" />
     <ClCompile Include="Semaphore.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="StoppableServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Client.h" />
+    <ClInclude Include="EndPoint.h" />
+    <ClInclude Include="Output.h" />
     <ClInclude Include="Semaphore.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

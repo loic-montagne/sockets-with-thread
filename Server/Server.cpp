@@ -33,7 +33,6 @@
 
 #include "Semaphore.h"
 
-using namespace std;
 
 // Valeurs constantes utilisées dans le programme
 // ----------------------------------------------------------------------------------------------------------------
@@ -61,10 +60,10 @@ void usleep(DWORD);
 
 #else
 
-unsigned int open_connection(int);
-unsigned int accept_connection(unsigned int);
-bool close_connection(unsigned int, bool);
-void start_client(unsigned int, int);
+int open_connection(int);
+int accept_connection(int);
+bool close_connection(int, bool);
+void start_client(int, int);
 
 #endif
 
@@ -85,30 +84,30 @@ CSemaphore sem_std_out(1);
 
 int main(int argc, char* argv[])
 {
-    cout << "*********************************************************" << endl;
-    cout << "*           Simple socket server application            *" << endl;
-    cout << "*********************************************************" << endl;
-    cout << endl;
-    cout << endl;
+    std::cout << "*********************************************************" << std::endl;
+    std::cout << "*           Simple socket server application            *" << std::endl;
+    std::cout << "*********************************************************" << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
 
     // Lecture des paramètres en cours
     int port;
     if (argc != 2 || !strtoi(argv[1], &port)) {
-        cout << "Invalid parameters !" << endl;
-        cout << "program usage : " << argv[0] << " connection_port" << endl;
+        std::cout << "Invalid parameters !" << std::endl;
+        std::cout << "program usage : " << argv[0] << " connection_port" << std::endl;
         exit(EXIT_FAILURE);
     }
-    cout << "Trying to open connection socket on the port " << port << "..." << endl;
+    std::cout << "Trying to open connection socket on the port " << port << "..." << std::endl;
 
 #ifdef _WIN32
     SOCKET connection_socket;
 #else
-    unsigned int connection_socket;
+    int connection_socket;
 #endif
 
     // Ouverture de la socket de connexion
     connection_socket = open_connection(port);
-    cout << "Connection socket opened successfully !" << endl;
+    std::cout << "Connection socket opened successfully !" << std::endl;
 
     // Boucle pour accepter les connexions entrantes
     int threads_count = 0;
@@ -119,7 +118,7 @@ int main(int argc, char* argv[])
 #ifdef _WIN32
         SOCKET client_socket;
 #else
-        unsigned int client_socket;
+        int client_socket;
 #endif
 
         // Attente de la connexion client
@@ -129,7 +128,7 @@ int main(int argc, char* argv[])
 
         // Démarrage du thread dédié au client
         threads_count++;
-        thread t_client(start_client, client_socket, threads_count);
+        std::thread t_client(start_client, client_socket, threads_count);
         t_client.detach();
     }
 
@@ -296,9 +295,9 @@ void usleep(DWORD dwMilliseconds)
 
 #else
 
-unsigned int open_connection(int connection_port)
+int open_connection(int connection_port)
 {
-    unsigned int connection_socket;
+    int connection_socket;
     struct sockaddr_in address;
     int yes = 1;
 
@@ -335,11 +334,11 @@ unsigned int open_connection(int connection_port)
     return connection_socket;
 }
 
-unsigned int accept_connection(unsigned int s)
+int accept_connection(int s)
 {
-    unsigned int client_socket;
+    int client_socket;
     struct sockaddr_in caddress;
-    int sinsize = sizeof(struct sockaddr_in);
+    unsigned int sinsize = sizeof(struct sockaddr_in);
 
     // Acceptation de la connexion
     if ((client_socket = accept(connection_socket, (struct sockaddr*)&caddress, &sinsize)) == -1) {
@@ -353,7 +352,7 @@ unsigned int accept_connection(unsigned int s)
     return client_socket;
 }
 
-bool close_connection(unsigned int s, bool notUsed)
+bool close_connection(int s, bool notUsed)
 {
     if (close(s) == -1) {
         perror("Error while closing socket : ");
@@ -362,7 +361,7 @@ bool close_connection(unsigned int s, bool notUsed)
     return true;
 }
 
-void start_client(unsigned int s, int id)
+void start_client(int s, int id)
 {
     char buffer[MAXDATASIZE];         // Message recu
     int length;                       // Taille du message reçu
@@ -439,8 +438,8 @@ void start_client(unsigned int s, int id)
 template <typename... T> void print(T... args)
 {
     sem_std_out.wait();
-    ((cout << args), ...);
-    cout.flush();
+    ((std::cout << args), ...);
+    std::cout.flush();
     sem_std_out.notify();
 }
 

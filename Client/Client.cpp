@@ -40,8 +40,8 @@ bool close_connection(SOCKET);
 
 #else
 
-unsigned int open_connection(char*, int);
-bool close_connection(unsigned int);
+int open_connection(char*, int);
+bool close_connection(int);
 
 #endif
 
@@ -174,12 +174,51 @@ bool close_connection(SOCKET s)
 
 #else
 
-unsigned int open_connection(char* server_address, int connection_port)
+int open_connection(char* server_address, int connection_port)
 {
+    int s;
+    struct sockaddr_in saddress;
+    int yes = 1;
+
+    // Ouverture de la socket de connexion
+    if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Error while creating connection socket : ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configuration de la socket de connexion
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        perror("Error while configuring connection socket : ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Récupération de l'adresse IP du serveur
+    if ((saddress.sin_addr.s_addr = inet_addr(server_address)) == INADDR_NONE) {
+        fprintf(stderr, "Server ip address is invalid !\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configuration de l'adresse de transport        
+    saddress.sin_family = AF_INET;               // type de la socket
+    saddress.sin_port = htons(connection_port);  // port, converti en réseau
+    bzero(&(address.sin_zero), 8);               // mise a zero du reste de la structure
+
+    // Tentative de connexion sur le point de connexion du serveur
+    if (connect(s, (struct sockaddr*)&saddress, sizeof(struct sockaddr)) == -1) {
+        perror("Error while connecting to server : ");
+        exit(EXIT_FAILURE);
+    }
+
+    return s;
 }
 
-bool close_connection(unsigned int s)
+bool close_connection(int s)
 {
+    if (close(s) == -1) {
+        perror("Error while closing socket : ");
+        return false;
+    }
+    return true;
 }
 
 #endif
