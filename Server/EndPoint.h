@@ -1,4 +1,4 @@
-/*
+
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -17,6 +17,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
+#include <thread>
+#include <vector>
+#include "Client.h"
 
 #ifndef ENDPOINT_H
 #define ENDPOINT_H
@@ -24,20 +27,19 @@
 class EndPoint
 {
 private:
-	const int backlog;
+	const int MAXDATASIZE;
+	const int BACKLOG;
 	int connection_port;
+	bool is_alive;
 	bool init_winsocks;
 #ifdef _WIN32
 	SOCKET connection_socket;
 #else
 	int connection_socket;
 #endif
-	
-
-public:
-	EndPoint(int, const int, bool);
-	~EndPoint();
-
+	std::thread thread;
+	std::vector<Client*> clients;
+		
 	bool open();
 #ifdef _WIN32
 	SOCKET accept_connection();
@@ -45,7 +47,15 @@ public:
 	int accept_connection();
 #endif
 	bool close();
+	void execute_thread();
+
+public:
+	EndPoint(int, const int, const int, bool);
+	~EndPoint();
+
+	void start_thread();
+	void end_thread();
+	void join_thread();
 };
 
 #endif
-*/

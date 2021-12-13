@@ -1,4 +1,3 @@
-/*
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
@@ -22,12 +21,12 @@
 #include "Output.h"
 
 #ifdef _WIN32
-Client::Client(int id, SOCKET socket, const int MAXDATASIZE) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE)
+Client::Client(int id, SOCKET socket, const int MAXDATASIZE) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE), is_alive(true)
 {
     buffer = new char[MAXDATASIZE];
 }
 #else
-Client::Client(int id, int socket, const int MAXDATASIZE) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE)
+Client::Client(int id, int socket, const int MAXDATASIZE) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE), is_alive(true)
 {
     buffer = new char[MAXDATASIZE];
 }
@@ -41,8 +40,11 @@ Client::~Client()
 
 bool Client::close_socket()
 {
+	if (socket == NULL || !is_alive)
+		return true;
+
 	int result;
-	Output::GetInstance()->print("[C", id, "] Closing client socket...\n");
+	Output::GetInstance()->print("[CLIENT_", id, "] Closing client socket...\n");
 
 #ifdef _WIN32
 	result = closesocket(socket);
@@ -52,23 +54,26 @@ bool Client::close_socket()
 
 	if (result == -1) {
 		char* error = new char[MAXDATASIZE];
-		sprintf(error, "[C%d] Error while closing socket : ", id);
+		sprintf(error, "[CLIENT_%d] Error while closing socket ", id);
 		Output::GetInstance()->print_error(error);
 		Output::GetInstance()->print("\n");
 		delete[] error;
 		return false;
 	}
 	else {
-		Output::GetInstance()->print("[C", id, "] Client socket closed successfully.\n");
+		Output::GetInstance()->print("[CLIENT_", id, "] Client socket closed successfully.\n");
 	}
 
 	return true;
 }
 bool Client::send_message(const char* buffer)
 {
+	if (socket == NULL || !is_alive)
+		return false;
+
 	if (send(socket, buffer, strlen(buffer), 0) == -1) {
 		char* error = new char[MAXDATASIZE];
-		sprintf(error, "[C%d] Error while sending message to client : ", id);
+		sprintf(error, "[CLIENT_%d] Error while sending message to client ", id);
 		Output::GetInstance()->print_error(error);
 		Output::GetInstance()->print("\n");
 		delete[] error;
@@ -79,11 +84,14 @@ bool Client::send_message(const char* buffer)
 }
 int Client::recv_message()
 {
+	if (socket == NULL || !is_alive)
+		return -1;
+
 	int length;
 	if ((length = recv(socket, buffer, MAXDATASIZE, 0)) == -1)
 	{
 		char* error = new char[MAXDATASIZE];
-		sprintf(error, "[C%d] Error while receiving message from client : ", id);
+		sprintf(error, "[CLIENT_%d] Error while receiving message from client ", id);
 		Output::GetInstance()->print_error(error);
 		Output::GetInstance()->print("\n");
 		delete[] error;
@@ -106,18 +114,24 @@ void Client::execute_thread()
     time_t time_value;
     struct tm* time_info;
 
-	Output::GetInstance()->print("[C", id, "] Thread client starts with id=", id, ".\n");
+	Output::GetInstance()->print("[CLIENT_", id, "] Thread client starts with id=", id, ".\n");
 
     // Boucle infinie pour le client
     while (1) {
+
+		if (socket == NULL || !is_alive)
+			return;
 
         // On attend un message du client
         if ((length = recv_message()) == -1) {
             break;
         }
 
+		if (socket == NULL || !is_alive)
+			return;
+
         // Affichage du message
-		Output::GetInstance()->print("[C", id, "] Message received : ", buffer, "\n");
+		Output::GetInstance()->print("[CLIENT_", id, "] Message received : ", buffer, "\n");
 
         if (strcmp(buffer, "DISCONNECT") == 0) {
             break;
@@ -137,13 +151,16 @@ void Client::execute_thread()
             else
                 sprintf(buffer, "%s is not recognized as a valid command", buffer);
 
+			if (socket == NULL || !is_alive)
+				return;
+
             // On envoie le buffer
-			Output::GetInstance()->print("[C", id, "] Sending message \"", buffer, "\" to client...\n");
+			Output::GetInstance()->print("[CLIENT_", id, "] Sending message \"", buffer, "\" to client...\n");
             if (!send_message(buffer)) {
                 break;
             }
 
-			Output::GetInstance()->print("[C", id, "] Message \"", buffer, "\" send to client successfully.\n");
+			Output::GetInstance()->print("[CLIENT_", id, "] Message \"", buffer, "\" send to client successfully.\n");
         }
     }
 
@@ -155,18 +172,28 @@ void Client::start_thread()
 	join_thread();
 	// Start client thread
 	thread = std::thread(&Client::execute_thread, this);
-	thread.detach();
 }
 
 void Client::end_thread()
 {
-	Output::GetInstance()->print("[C", id, "] Thread client ends.\n");
+	if (!is_alive)
+		return;
+
+	Output::GetInstance()->print("[CLIENT_", id, "] Thread client is ending...\n");
+
+	// Sending close connection to client
+	send_message("CONNECTION_CLOSED");
+
+	is_alive = false;
 
 	// End thread
+	thread.detach();
 	thread.~thread();
 
 	// Close connection
 	close_socket();
+
+	Output::GetInstance()->print("[CLIENT_", id, "] Thread client ends.\n");
 }
 
 void Client::join_thread()
@@ -175,4 +202,3 @@ void Client::join_thread()
 		thread.join();
 	}
 }
-*/

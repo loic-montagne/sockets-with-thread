@@ -1,4 +1,4 @@
-/*
+
 #include <iostream>
 #include "Semaphore.h"
 
@@ -16,6 +16,7 @@ private:
 public:
 	template <typename... T> void print(T...);
     void print_error(const char*);
+    bool confirm_exit();
 
     Output(Output& other) = delete;
     void operator=(const Output&) = delete;
@@ -23,5 +24,12 @@ public:
     static Output* GetInstance();
 };
 
+template <typename... T> void Output::print(T... args)
+{
+    sem_std_out.wait();
+    ((std::cout << args), ...);
+    std::cout.flush();
+    sem_std_out.notify();
+}
+
 #endif
-*/

@@ -1,14 +1,11 @@
-/*
+
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include <iostream>
-//#include <thread>
-//#include <mutex>
-//#include <cstdarg>
-//#include <vector>
+#include <vector>
 
 #include "Output.h"
 #include "Client.h"
@@ -36,6 +33,7 @@ bool strtoi(char*, int*);
 // ----------------------------------------------------------------------------------------------------------------
 
 // Liste des threads en cours d'exécution
+std::vector<Client*> clients;
 
 
 
@@ -44,41 +42,47 @@ bool strtoi(char*, int*);
 
 int main(int argc, char* argv[])
 {
-    std::cout << "*********************************************************" << std::endl;
-    std::cout << "*           Simple socket server application            *" << std::endl;
-    std::cout << "*********************************************************" << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
+    Output::GetInstance()->print("*********************************************************\n");
+    Output::GetInstance()->print("*           Simple socket server application            *\n");
+    Output::GetInstance()->print("*********************************************************\n");
+    Output::GetInstance()->print("\n");
+    Output::GetInstance()->print("\n");
 
     // Lecture des paramètres en cours
     int port;
     if (argc != 2 || !strtoi(argv[1], &port)) {
-        std::cout << "Invalid parameters !" << std::endl;
-        std::cout << "program usage : " << argv[0] << " connection_port" << std::endl;
+        Output::GetInstance()->print("[MAIN] Invalid parameters !\n");
+        Output::GetInstance()->print("[MAIN] program usage : ", argv[0], " connection_port\n");
         exit(EXIT_FAILURE);
     }
 
-    // Ouverture de la socket de connexion
-    std::cout << "Trying to open connection socket on the port " << port << "..." << std::endl;
-    EndPoint connection(port, BACKLOG, true);
-    if (!connection.open()) {
-        exit(EXIT_FAILURE);
-    }
-    std::cout << "Connection socket opened successfully !" << std::endl;
+    Output::GetInstance()->print("[MAIN] If you want to stop the server, you have to enter 'EXIT'.\n");
 
-    // Boucle pour accepter les connexions entrantes
-    int threads_count = 0;
+    // Création du thread du serveur
+    Output::GetInstance()->print("[MAIN] Creating server end point...\n");
+    EndPoint connection(port, BACKLOG, MAXDATASIZE, true);
+    connection.start_thread();
+
+    // Boucle infinie pour ne pas arrêter le programme serveur
     while (1)
     {
-        Output::GetInstance()->print("\nWaiting for client connection...\n");
-
-        threads_count++;
-        Client c(threads_count, connection.accept_connection(), MAXDATASIZE);
-        c.start_thread();
+        char buffer[MAXDATASIZE];
+        std::cin >> buffer;
+        
+        // Traitement de la commande reçue
+        if (strcmp(buffer, "EXIT") == 0 && Output::GetInstance()->confirm_exit()) {
+            // On quitte la boucle principale
+            break;
+        }
+        else {
+            Output::GetInstance()->print("[MAIN] ", buffer, " is not recognized as a valid command", "\n");
+        }
     }
 
-    if (!connection.close())
-        exit(EXIT_FAILURE);
+    // Destruction du thread du serveur
+    connection.~EndPoint();
+
+    Output::GetInstance()->print("[MAIN] Main program ends.\n");
 
     return EXIT_SUCCESS;
 }
@@ -99,4 +103,3 @@ bool strtoi(char* value, int* result)
     *result = arg;
     return true;
 }
-*/

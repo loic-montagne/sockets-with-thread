@@ -90,16 +90,13 @@ int main(int argc, char* argv[])
             break;
 
         // Envoi du buffer au serveur
-        if (send(s, buffer, strlen(buffer), 0) == -1)
-        {
-            perror("Error while sending message to server : ");
-            continue;
+        if (send(s, buffer, strlen(buffer), 0) == -1) {
+            perror("Error while sending message to server ");
         }
 
         // Lecture de la réponse du serveur
-        if ((length = recv(s, buffer, MAXDATASIZE, 0)) == -1)
-        {
-            perror("Error while receiving message from server : ");
+        if ((length = recv(s, buffer, MAXDATASIZE, 0)) == -1) {
+            perror("Error while receiving message from server ");
             continue;
         }
 
@@ -110,8 +107,15 @@ int main(int argc, char* argv[])
         if (length >= 0 && length < MAXDATASIZE)
             buffer[length] = '\0';
 
-        // Affichage du message
-        cout << buffer << endl;
+        if (strcmp(buffer, "CONNECTION_CLOSED") == 0) {
+            cout << "Le serveur a ferme la connexion !" << endl;
+            break;
+        }
+        else {
+            // Affichage du message
+            cout << buffer << endl;
+        }
+        
     }
 
     close_connection(s);
@@ -130,13 +134,13 @@ SOCKET open_connection(char* server_address, int connection_port)
     // Initialisation l'utilisation des WinSocks par un processus
     WSADATA WSAData;
     if (WSAStartup(MAKEWORD(2, 0), &WSAData) == -1) {
-        perror("Error while starting using WinSocks : ");
+        perror("Error while starting using WinSocks ");
         exit(EXIT_FAILURE);
     }
 
     // Ouverture de la socket
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Error while creating socket : ");
+        perror("Error while creating socket ");
         exit(EXIT_FAILURE);
     }
 
@@ -152,7 +156,7 @@ SOCKET open_connection(char* server_address, int connection_port)
 
     // Tentative de connexion sur le point de connexion du serveur
     if (connect(s, (struct sockaddr*)&saddress, sizeof(struct sockaddr)) == -1) {
-        perror("Error while connecting to server : ");
+        perror("Error while connecting to server ");
         exit(EXIT_FAILURE);
     }
 
@@ -162,11 +166,11 @@ SOCKET open_connection(char* server_address, int connection_port)
 bool close_connection(SOCKET s)
 {
     if (closesocket(s) == -1) {
-        perror("Error while closing socket : ");
+        perror("Error while closing socket ");
         return false;
     }
     if (WSACleanup() == -1) {
-        perror("Error while cleaning WinSocks : ");
+        perror("Error while cleaning WinSocks ");
         return false;
     }
     return true;
@@ -182,13 +186,13 @@ int open_connection(char* server_address, int connection_port)
 
     // Ouverture de la socket de connexion
     if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Error while creating connection socket : ");
+        perror("Error while creating connection socket ");
         exit(EXIT_FAILURE);
     }
 
     // Configuration de la socket de connexion
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-        perror("Error while configuring connection socket : ");
+        perror("Error while configuring connection socket ");
         exit(EXIT_FAILURE);
     }
 
@@ -205,7 +209,7 @@ int open_connection(char* server_address, int connection_port)
 
     // Tentative de connexion sur le point de connexion du serveur
     if (connect(s, (struct sockaddr*)&saddress, sizeof(struct sockaddr)) == -1) {
-        perror("Error while connecting to server : ");
+        perror("Error while connecting to server ");
         exit(EXIT_FAILURE);
     }
 
@@ -215,7 +219,7 @@ int open_connection(char* server_address, int connection_port)
 bool close_connection(int s)
 {
     if (close(s) == -1) {
-        perror("Error while closing socket : ");
+        perror("Error while closing socket ");
         return false;
     }
     return true;
