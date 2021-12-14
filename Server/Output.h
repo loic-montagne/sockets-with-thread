@@ -15,7 +15,9 @@ private:
 
 public:
 	template <typename... T> void print(T...);
-    void print_error(const char*);
+    void print_error(const std::string, const char*, bool = true);
+    void print_error(const char*, const char*, bool = true);
+    void print_error(const char*, bool = true);
     bool confirm_exit();
 
     Output(Output& other) = delete;

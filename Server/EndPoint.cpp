@@ -17,22 +17,25 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
+#include "ThreadedSocket.h"
 #include "EndPoint.h"
 #include "Client.h"
 #include "Output.h"
 
-EndPoint::EndPoint(int connection_port, const int BACKLOG, const int MAXDATASIZE, bool init_winsocks) : connection_port(connection_port), BACKLOG(BACKLOG), init_winsocks(init_winsocks), MAXDATASIZE(MAXDATASIZE), connection_socket(NULL), is_alive(true)
+EndPoint::EndPoint(int connection_port, const int BACKLOG, const int MAXDATASIZE, bool init_winsocks) : ThreadedSocket(NULL, init_winsocks, MAXDATASIZE), connection_port(connection_port), BACKLOG(BACKLOG)
 {
+    output_prefix = (char*)malloc(strlen("[SERVER] ") + 1);
+    strcpy(output_prefix, "[SERVER] ");
 }
 
 EndPoint::~EndPoint()
 {
-    end_thread();
+    ThreadedSocket::~ThreadedSocket();
+    free(output_prefix);
 }
 
-
 #ifdef _WIN32
-bool EndPoint::open()
+bool EndPoint::open_socket()
 {
     SOCKADDR_IN address;
 
@@ -40,14 +43,14 @@ bool EndPoint::open()
     if (init_winsocks) {
         WSADATA WSAData;
         if (WSAStartup(MAKEWORD(2, 0), &WSAData) == -1) {
-            Output::GetInstance()->print_error("[SERVER] Error while starting using WinSocks ");
+            Output::GetInstance()->print_error(output_prefix, "Error while starting using WinSocks ");
             return false;
         }
     }
 
     // Ouverture de la socket de connexion
-    if ((connection_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while creating connection socket ");
+    if ((socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while creating connection socket ");
         return false;
     }
 
@@ -57,14 +60,14 @@ bool EndPoint::open()
     address.sin_port = htons(connection_port); // port, converti en reseau
 
     // Demarrage du point de connexion : on ajoute l'adresse de transport dans la socket
-    if (bind(connection_socket, (SOCKADDR*)&address, sizeof(address)) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while binding connection socket ");
+    if (bind(socket_, (SOCKADDR*)&address, sizeof(address)) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while binding connection socket ");
         return false;
     }
 
     // Attente sur le point de connexion
-    if (listen(connection_socket, BACKLOG) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while listening connection socket ");
+    if (listen(socket_, BACKLOG) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while listening connection socket ");
         return false;
     }
 
@@ -78,10 +81,10 @@ SOCKET EndPoint::accept_connection()
     int sinsize = sizeof(client_address);
 
     // Acceptation de la connexion
-    if ((client_socket = accept(connection_socket, (SOCKADDR*)&client_address, &sinsize)) == -1) {
+    if ((client_socket = accept(socket_, (SOCKADDR*)&client_address, &sinsize)) == -1) {
         if (!is_alive)
             return NULL;
-        Output::GetInstance()->print_error("[SERVER] Error while accepting client connection ");
+        Output::GetInstance()->print_error(output_prefix, "Error while accepting client connection ");
         return NULL;
     }
 
@@ -89,26 +92,25 @@ SOCKET EndPoint::accept_connection()
         return NULL;
 
     // Affichage de la connexion
-    Output::GetInstance()->print("[SERVER][+] New connection from ", inet_ntoa(client_address.sin_addr), "\n");
+    Output::GetInstance()->print(output_prefix, " [+] New connection from ", inet_ntoa(client_address.sin_addr), "\n");
 
     return client_socket;
 }
 #else
-int EndPoint::open()
+int EndPoint::open_socket()
 {
-    int connection_socket;
     struct sockaddr_in address;
     int yes = 1;
 
     // Ouverture de la socket de connexion
-    if ((connection_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while creating connection socket ");
+    if ((socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while creating connection socket ");
         return false;
     }
 
     // Configuration de la socket de connexion
-    if (setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while configuring connection socket ");
+    if (setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while configuring connection socket ");
         return false;
     }
 
@@ -119,31 +121,31 @@ int EndPoint::open()
     bzero(&(address.sin_zero), 8);             // mise a zero du reste de la structure
 
     // Demarrage du point de connexion : on ajoute l'adresse de transport dans la socket
-    if (bind(connection_socket, (struct sockaddr*)&address, sizeof(struct sockaddr)) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while binding connection socket ");
+    if (bind(socket_, (struct sockaddr*)&address, sizeof(struct sockaddr)) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while binding connection socket ");
         return false;
     }
 
     // Attente sur le point de connexion
-    if (listen(connection_socket, BACKLOG) == -1) {
-        Output::GetInstance()->print_error("[SERVER] Error while listening connection socket ");
+    if (listen(socket_, BACKLOG) == -1) {
+        Output::GetInstance()->print_error(output_prefix, "Error while listening connection socket ");
         return false;
     }
 
     return true;
 }
 
-int accept_connection()
+int EndPoint::accept_connection()
 {
     int client_socket;
     struct sockaddr_in client_address;
     unsigned int sinsize = sizeof(struct sockaddr_in);
 
     // Acceptation de la connexion
-    if ((client_socket = accept(connection_socket, (struct sockaddr*)&client_address, &sinsize)) == -1) {
+    if ((client_socket = accept(socket_, (struct sockaddr*)&client_address, &sinsize)) == -1) {
         if (!is_alive)
             return NULL;
-        Output::GetInstance()->print_error("[SERVER] Error while accepting client connection ");
+        Output::GetInstance()->print_error(output_prefix, "Error while accepting client connection ");
         return NULL;
     }
 
@@ -151,56 +153,35 @@ int accept_connection()
         return NULL;
 
     // Affichage de la connexion
-    Output::GetInstance()->print("[SERVER][+] New connection from ", inet_ntoa(client_address.sin_addr), "\n");
+    Output::GetInstance()->print(output_prefix, " [+] New connection from ", inet_ntoa(client_address.sin_addr), "\n");
 
     return client_socket;
 }
 #endif
 
-bool EndPoint::close()
+void EndPoint::end_thread()
 {
-    if (connection_socket == NULL || !is_alive)
-        return true;
+    if (!is_alive)
+        return;
 
-	int result;
-    Output::GetInstance()->print("[SERVER] Trying to close connection socket...\n");
+    // End all clients
+    for (std::vector<Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        (*it)->end_thread();
+    }
 
-#ifdef _WIN32
-	result = closesocket(connection_socket);
-#else
-	result = close(connection_socket);
-#endif
-
-	if (result == -1) {
-		Output::GetInstance()->print_error("[SERVER] Error while closing connection socket ");
-        Output::GetInstance()->print("\n");
-		return false;
-	}
-	
-#ifdef _WIN32
-	if (init_winsocks && WSACleanup() == -1) {
-		Output::GetInstance()->print_error("[SERVER] Error while cleaning WinSocks ");
-        Output::GetInstance()->print("\n");
-		return false;
-	}
-#endif
-
-    Output::GetInstance()->print("[SERVER] Connection socket closed successfully !\n");
-
-	return true;
+    ThreadedSocket::end_thread();
 }
-
 
 void EndPoint::execute_thread()
 {
-    Output::GetInstance()->print("[SERVER] Thread server starts.\n");
-    
+    Output::GetInstance()->print(output_prefix, "Thread server starts.\n");
+
     // Ouverture de la socket de connexion
-    Output::GetInstance()->print("[SERVER] Trying to open connection socket on the port ", connection_port, "...\n");
-    if (!open()) {
+    Output::GetInstance()->print(output_prefix, "Trying to open connection socket on the port ", connection_port, "...\n");
+    if (!open_socket()) {
         exit(EXIT_FAILURE);
     }
-    Output::GetInstance()->print("[SERVER] Connection socket opened successfully !\n");
+    Output::GetInstance()->print(output_prefix, "Connection socket opened successfully !\n");
 
     // Boucle infinie pour le serveur (pour accepter les connexions entrantes)
     int threads_count = 0;
@@ -210,7 +191,7 @@ void EndPoint::execute_thread()
         if (!is_alive)
             return;
 
-        Output::GetInstance()->print("[SERVER] Waiting for client connection...\n");
+        Output::GetInstance()->print(output_prefix, "Waiting for client connection...\n");
 
         threads_count++;
 #ifdef _WIN32
@@ -231,43 +212,5 @@ void EndPoint::execute_thread()
             c->start_thread();
             clients.push_back(c);
         }
-    }
-}
-
-void EndPoint::start_thread()
-{
-    join_thread();
-    // Start server thread
-    thread = std::thread(&EndPoint::execute_thread, this);
-}
-
-void EndPoint::end_thread()
-{
-    if (!is_alive)
-        return;
-
-    Output::GetInstance()->print("[SERVER] Thread server is ending...\n");
-
-    is_alive = false;
-
-    // End all clients
-    for (std::vector<Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
-        (*it)->~Client();
-    }
-
-    // End thread
-    thread.detach();
-    thread.~thread();
-
-    // Close end point connection
-    close();
-
-    Output::GetInstance()->print("[SERVER] Thread server ends.\n");
-}
-
-void EndPoint::join_thread()
-{
-    if (thread.joinable()) {
-        thread.join();
     }
 }

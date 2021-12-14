@@ -19,43 +19,31 @@
 #endif
 #include <thread>
 #include <vector>
+#include "ThreadedSocket.h"
 #include "Client.h"
 
 #ifndef ENDPOINT_H
 #define ENDPOINT_H
 
-class EndPoint
+class EndPoint : public ThreadedSocket
 {
-private:
-	const int MAXDATASIZE;
 	const int BACKLOG;
 	int connection_port;
-	bool is_alive;
-	bool init_winsocks;
-#ifdef _WIN32
-	SOCKET connection_socket;
-#else
-	int connection_socket;
-#endif
-	std::thread thread;
 	std::vector<Client*> clients;
-		
-	bool open();
+
+	bool open_socket();
 #ifdef _WIN32
 	SOCKET accept_connection();
 #else
 	int accept_connection();
 #endif
-	bool close();
 	void execute_thread();
 
 public:
 	EndPoint(int, const int, const int, bool);
 	~EndPoint();
-
-	void start_thread();
 	void end_thread();
-	void join_thread();
+
 };
 
 #endif
