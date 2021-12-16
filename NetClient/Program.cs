@@ -19,7 +19,7 @@ namespace NetClient
             int port;
             if (args == null || args.Length != 2 || !int.TryParse(args[1], out port))
             {
-                string file = typeof(Program).GetType().Assembly.Location;
+                string file = typeof(Program).Assembly.Location;
                 string appExeName = System.IO.Path.GetFileNameWithoutExtension(file);
                 Console.WriteLine("Invalid parameters !");
                 Console.WriteLine("program usage : " + appExeName + " server_address connection_port");
@@ -33,7 +33,6 @@ namespace NetClient
             Console.WriteLine("Connection to server opened successfully !");
 
             string buffer;
-
             while (true)
             {
                 Console.WriteLine("");
@@ -42,14 +41,9 @@ namespace NetClient
 
                 // Traitement de la chaîne lue
                 if (string.IsNullOrEmpty(buffer))
-                {
-                    Console.WriteLine("You must specify a commmand !");
                     continue;
-                }
                 else if (buffer == "EXIT")
-                {
                     break;
-                }
 
                 // Envoi du buffer au serveur
                 Send(s, buffer);
@@ -70,7 +64,6 @@ namespace NetClient
                     // Affichage du message
                     Console.WriteLine(buffer);
                 }
-
             }
 
             CloseConnection(s);
@@ -81,10 +74,7 @@ namespace NetClient
             try
             {
                 IPHostEntry iphostentry = Dns.GetHostEntry(serverAddress);
-                foreach (IPAddress ipaddress in iphostentry.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork))
-                {
-                    return ipaddress.ToString();
-                }
+                return iphostentry.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork)?.ToString();
             }
             catch (SocketException e)
             {
@@ -136,42 +126,37 @@ namespace NetClient
 
         private static string Receive(Socket s)
         {
-            if (s.Connected)
+            if (s.Connected || s.Poll(10, SelectMode.SelectRead) && s.Available == 0)
             {
-                if (s.Poll(10, SelectMode.SelectRead) && s.Available == 0)
-                {
-                    //La connexion a été clôturée par le serveur ou bien un problème
-                    //réseau est apparu
-                    Console.WriteLine("Connection to server has been closed.");
-                    return null;
-                }
-
-                // Attente de data à lire
-                while (s.Available == 0) ;
-
-                // Lecture des données
-                string messageReceived = null;
-                while (s.Available > 0)
-                {
-                    try
-                    {
-                        byte[] msg = new Byte[s.Available];
-                        //Réception des données
-                        s.Receive(msg, 0, s.Available, SocketFlags.None);
-                        var msgStr = System.Text.Encoding.UTF8.GetString(msg).Trim();
-                        //On concatène les données reçues(max 4ko) dans
-                        //une variable de la classe
-                        messageReceived += msgStr;
-                    }
-                    catch (SocketException e)
-                    {
-                        Console.WriteLine("Error while receiving data on socket : " + e.Message);
-                    }
-                }
-                return messageReceived;
+                //La connexion a été clôturée par le serveur ou bien un problème
+                //réseau est apparu
+                Console.WriteLine("Connection to server has been closed.");
+                return null;
             }
 
-            return null;
+            // Attente de data à lire
+            while (s.Available == 0) ;
+
+            // Lecture des données
+            string messageReceived = null;
+            while (s.Available > 0)
+            {
+                try
+                {
+                    byte[] msg = new byte[s.Available];
+                    //Réception des données
+                    s.Receive(msg, 0, s.Available, SocketFlags.None);
+                    var msgStr = System.Text.Encoding.UTF8.GetString(msg).Trim();
+                    //On concatène les données reçues(max 4ko) dans
+                    //une variable de la classe
+                    messageReceived += msgStr;
+                }
+                catch (SocketException e)
+                {
+                    Console.WriteLine("Error while receiving data on socket : " + e.Message);
+                }
+            }
+            return messageReceived;
         }
 
         private static void Send(Socket s, string message)
@@ -179,7 +164,7 @@ namespace NetClient
             if (string.IsNullOrEmpty(message))
                 return;
 
-            if (!s.Poll(10, SelectMode.SelectWrite))
+            if (!s.Connected || !s.Poll(10, SelectMode.SelectWrite))
             {
                 //La connexion a été clôturée par le serveur ou bien un problème
                 //réseau est apparu
