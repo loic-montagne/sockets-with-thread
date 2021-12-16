@@ -37,6 +37,12 @@ Client::Client(int id, SOCKET socket, const int MAXDATASIZE) : ThreadedSocket(so
 Client::Client(int id, int socket, const int MAXDATASIZE) : ThreadedSocket(socket, false, MAXDATASIZE), id(id)
 {
 	buffer = new char[MAXDATASIZE];
+
+	char numstr[21]; // enough to hold all numbers up to 64-bits
+	sprintf(numstr, "%d", id);
+	std::string prefix = std::string(std::string(std::string("[CLIENT_") + numstr + std::string("] ")));
+	output_prefix = (char*)malloc(strlen(prefix.c_str()) + 1);
+	strcpy(output_prefix, prefix.c_str());
 }
 #endif
 

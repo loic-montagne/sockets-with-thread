@@ -26,7 +26,7 @@ ThreadedSocket::ThreadedSocket(SOCKET socket, bool init_winsocks, const int MAXD
 {
 }
 #else
-ThreadedSocket::ThreadedSocket(int socket, bool init_winsocks, const int MAXDATASIZE) : socket_(socket), init_winsocks(init_winsocks), MAXDATASIZE(MAXDATASIZE), output_prefix(get_output_prefix()), is_alive(true), output_prefix(NULL)
+ThreadedSocket::ThreadedSocket(int socket, bool init_winsocks, const int MAXDATASIZE) : socket_(socket), init_winsocks(init_winsocks), MAXDATASIZE(MAXDATASIZE), is_alive(true), output_prefix(NULL)
 {
 }
 #endif
