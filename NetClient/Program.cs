@@ -7,9 +7,6 @@ namespace NetClient
 {
     class Program
     {
-        // Nombre maximal d'octets à envoyer ou à lire en une fois
-        private const int MAXDATASIZE = 100;
-
         static void Main(string[] args)
         {
             Console.WriteLine("*********************************************************");
