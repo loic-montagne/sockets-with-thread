@@ -19,15 +19,19 @@
 #include <thread>
 #include "Client.h"
 #include "Output.h"
-
+#include "Joueur.h"
+#include "Game.h"
 #ifdef _WIN32
-Client::Client(int id, SOCKET socket, const int MAXDATASIZE) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE), is_alive(true)
+Client::Client(int id, SOCKET socket, const int MAXDATASIZE, Game *game) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE), is_alive(true), game(game)
 {
+	joueur = new Joueur(this);
+	game->addJoueur(joueur);
     buffer = new char[MAXDATASIZE];
 }
 #else
-Client::Client(int id, int socket, const int MAXDATASIZE) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE), is_alive(true)
+Client::Client(int id, int socket, const int MAXDATASIZE, Game *game) : id(id), socket(socket), MAXDATASIZE(MAXDATASIZE), is_alive(true), game(game)
 {
+	joueur = new Joueur();
     buffer = new char[MAXDATASIZE];
 }
 #endif
@@ -36,6 +40,7 @@ Client::~Client()
 {
     end_thread();
     delete[] buffer;
+	delete joueur;
 }
 
 bool Client::close_socket()
@@ -132,6 +137,8 @@ void Client::execute_thread()
 
         // Affichage du message
 		Output::GetInstance()->print("[CLIENT_", id, "] Message received : ", buffer, "\n");
+		
+		//JSON a faire pour le buffer, le client envoie des JSON c'est mieux
 
         if (strcmp(buffer, "DISCONNECT") == 0) {
             break;
@@ -148,6 +155,9 @@ void Client::execute_thread()
                 strftime(buffer, MAXDATASIZE, "%A", time_info);
             else if (strcmp(buffer, "MONTH") == 0)
                 strftime(buffer, MAXDATASIZE, "%B", time_info);
+			else if (strcmp(buffer, "READY") == 0) {
+				game->setJoueurReady();
+			}
             else
                 sprintf(buffer, "%s is not recognized as a valid command", buffer);
 

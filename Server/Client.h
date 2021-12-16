@@ -17,6 +17,8 @@
 #include <arpa/inet.h>
 #endif
 #include <thread>
+#include "Joueur.h"
+#include "Game.h"
 
 #ifndef CLIENT_H
 #define CLIENT_H
@@ -24,6 +26,8 @@
 class Client
 {
 private:
+	Joueur *joueur;
+	Game *game;
 	const int MAXDATASIZE;
 	int id;
 	bool is_alive;
@@ -43,9 +47,9 @@ private:
 
 public:
 #ifdef _WIN32
-	Client(int, SOCKET, const int MAXDATASIZE);
+	Client(int, SOCKET, const int MAXDATASIZE, Game *game);
 #else
-	Client(int, int, const int MAXDATASIZE);
+	Client(int, int, const int MAXDATASIZE, Game *game);
 #endif
 	~Client();
 

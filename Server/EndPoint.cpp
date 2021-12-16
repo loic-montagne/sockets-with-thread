@@ -20,6 +20,7 @@
 #include "EndPoint.h"
 #include "Client.h"
 #include "Output.h"
+#include "Game.h"
 
 EndPoint::EndPoint(int connection_port, const int BACKLOG, const int MAXDATASIZE, bool init_winsocks) : connection_port(connection_port), BACKLOG(BACKLOG), init_winsocks(init_winsocks), MAXDATASIZE(MAXDATASIZE), connection_socket(NULL), is_alive(true)
 {
@@ -205,6 +206,7 @@ void EndPoint::execute_thread()
     // Boucle infinie pour le serveur (pour accepter les connexions entrantes)
     int threads_count = 0;
     Client* c;
+    Game *game = new Game();
     while (1)
     {
         if (!is_alive)
@@ -222,7 +224,7 @@ void EndPoint::execute_thread()
             return;
 
         if (client_socket != NULL) {
-            c = new Client(threads_count, client_socket, MAXDATASIZE);
+            c = new Client(threads_count, client_socket, MAXDATASIZE, game);
             if (!is_alive) {
                 c->~Client();
                 return;
