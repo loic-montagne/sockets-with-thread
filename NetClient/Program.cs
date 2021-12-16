@@ -9,9 +9,9 @@ namespace NetClient
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("*********************************************************");
-            Console.WriteLine("*           Simple socket client application            *");
-            Console.WriteLine("*********************************************************");
+            Console.WriteLine("**********************************************************");
+            Console.WriteLine("*          Simple C# socket client application           *");
+            Console.WriteLine("**********************************************************");
             Console.WriteLine("");
             Console.WriteLine("");
 
@@ -126,7 +126,7 @@ namespace NetClient
 
         private static string Receive(Socket s)
         {
-            if (s.Connected || s.Poll(10, SelectMode.SelectRead) && s.Available == 0)
+            if (s == null || s.Connected || s.Poll(10, SelectMode.SelectRead) && s.Available == 0)
             {
                 //La connexion a été clôturée par le serveur ou bien un problème
                 //réseau est apparu
@@ -164,7 +164,7 @@ namespace NetClient
             if (string.IsNullOrEmpty(message))
                 return;
 
-            if (!s.Connected || !s.Poll(10, SelectMode.SelectWrite))
+            if (s == null || !s.Connected || !s.Poll(10, SelectMode.SelectWrite))
             {
                 //La connexion a été clôturée par le serveur ou bien un problème
                 //réseau est apparu
