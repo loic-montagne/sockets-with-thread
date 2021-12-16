@@ -15,7 +15,7 @@ namespace AsyncNetClient
         private static bool isReceivingData = false;
         private static string receivedData = null;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.WriteLine("**********************************************************");
             Console.WriteLine("*       Simple C# socket async client application        *");
@@ -53,28 +53,28 @@ namespace AsyncNetClient
                 else if (command == "EXIT")
                     break;
 
-                // Envoi du buffer au serveur
+                // Envoi de la commande au serveur
                 Console.Write("Sending command to server in progress...");
-                if (!BeginSend(command))
+                if (!await BeginSendAsync(command))
                     continue;
                 // Attente de la fin de l'envoi
                 while (isSendingData)
                 {
                     Console.Write(".");
-                    Thread.Sleep(1000);
+                    Thread.Sleep(500);
                 }
                 Console.WriteLine("");
                 Console.WriteLine("Command sent to server successfully.");
 
                 // Lecture de la réponse du serveur
                 Console.Write("Reading server response in progress...");
-                if (!BeginReceive())
+                if (!await BeginReceiveAsync())
                     continue;
                 // Attente de la fin de la réception
                 while (isReceivingData)
                 {
                     Console.Write(".");
-                    Thread.Sleep(1000);
+                    Thread.Sleep(500);
                 }
                 Console.WriteLine("");
 
@@ -148,7 +148,7 @@ namespace AsyncNetClient
             return false;
         }
 
-        private static bool BeginReceive()
+        private static async Task<bool> BeginReceiveAsync()
         {
             if (socket == null || !socket.Connected || socket.Poll(10, SelectMode.SelectRead) && socket.Available == 0)
             {
@@ -159,15 +159,14 @@ namespace AsyncNetClient
                 return false;
             }
 
-            if (isReceivingData)
-                return false;
+            await Task.Run(() => { while (isReceivingData) ; });
 
             isReceivingData = true;
             receivedData = null;
 
             var tWaitForEndingSendingData = Task.Run(() => { while (isSendingData) ; });
             var tWaitForDataAvailable = Task.Run(() => { while (socket.Available == 0) ; });
-            Task.Factory.ContinueWhenAll(
+            _ = Task.Factory.ContinueWhenAll(
                 new Task[] { tWaitForEndingSendingData, tWaitForDataAvailable },
                 t => 
                 {
@@ -218,10 +217,10 @@ namespace AsyncNetClient
             }
         }
 
-        private static bool BeginSend(string message)
+        private static async Task<bool> BeginSendAsync(string message)
         {
             if (string.IsNullOrEmpty(message))
-                return true;
+                return false;
 
             if (socket == null || !socket.Connected || !socket.Poll(10, SelectMode.SelectWrite))
             {
@@ -232,13 +231,12 @@ namespace AsyncNetClient
                 return false;
             }
 
-            if (isSendingData)
-                return false;
+            await Task.Run(() => { while (isSendingData) ; });
 
             isSendingData = true;
 
             var tWaitForEndingReceivingData = Task.Run(() => { while (isReceivingData) ; });
-            Task.Factory.ContinueWhenAll(
+            _ = Task.Factory.ContinueWhenAll(
                 new Task[] { tWaitForEndingReceivingData },
                 t =>
                 {
