@@ -19,31 +19,26 @@
 #include <thread>
 #include "Joueur.h"
 #include "Game.h"
+#include "ThreadedSocket.h"
 
 #ifndef CLIENT_H
 #define CLIENT_H
 
-class Client
+class Client : public ThreadedSocket
 {
 private:
 	Joueur *joueur;
 	Game *game;
 	const int MAXDATASIZE;
+protected:
 	int id;
-	bool is_alive;
-#ifdef _WIN32
-	SOCKET socket;
-#else
-	int socket;
-#endif
-	std::thread thread;
 	char* buffer;
+
+	void execute_thread();
 
 	bool send_message(const char*);
 	int recv_message();
-	bool close_socket();
-	void execute_thread();
-
+	
 
 public:
 #ifdef _WIN32
@@ -52,10 +47,7 @@ public:
 	Client(int, int, const int MAXDATASIZE, Game *game);
 #endif
 	~Client();
-
-	void start_thread();
 	void end_thread();
-	void join_thread();
 };
 
 #endif

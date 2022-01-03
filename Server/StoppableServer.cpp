@@ -29,13 +29,6 @@
 bool strtoi(char*, int*);
 
 
-// Variables globales
-// ----------------------------------------------------------------------------------------------------------------
-
-// Liste des threads en cours d'exécution
-std::vector<Client*> clients;
-
-
 
 // Fonctions
 // ----------------------------------------------------------------------------------------------------------------
@@ -80,7 +73,7 @@ int main(int argc, char* argv[])
     }
 
     // Destruction du thread du serveur
-    connection.~EndPoint();
+    connection.end_thread();
 
     Output::GetInstance()->print("[MAIN] Main program ends.\n");
 
