@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "UH5GBXIxuB1mQsbqp1wxuNCkU+2A06r/rQqv6NqzDYEzteFS04CCxpMNsBijMhxGtuEWbYGHEa2+7srEhYm23Q==",
+  "dgSpecHash": "6mdbIObyJ62SUgX0TfDA0JIYgKqmhpU9vzJHsRJ6HWyWbBxtdmE0bv4sTqkKVaoltbf+u1a8NHUWnd99tKQMfw==",
   "success": true,
-  "projectFilePath": "C:\\tmp\\sockets-with-thread\\NetClient\\NetClient.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "C:\\Sources\\sockets-with-thread\\NetClient\\NetClient.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\5.0.13\\microsoft.netcore.app.host.win-x64.5.0.13.nupkg.sha512",
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\5.0.0\\microsoft.aspnetcore.app.ref.5.0.0.nupkg.sha512",
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\5.0.0\\microsoft.windowsdesktop.app.ref.5.0.0.nupkg.sha512",
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.netcore.app.ref\\5.0.0\\microsoft.netcore.app.ref.5.0.0.nupkg.sha512"
+  ],
   "logs": []
 }

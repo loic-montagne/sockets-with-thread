@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "UvhzRQqbzZPnZHBA5+xoS8M3TF3ldbxD3dcHpS+knp64J1kWYBji64NumYxsiisurVRmnmIJK5CrhxJbDIJtGQ==",
+  "dgSpecHash": "omPD3AHcyzppVaiIp7i6iXlOv5lwjRo04qPMTqcXLlqBKzNvoM8u2ZVyOIr1IcvVh6v1nMDlgqGa26QxGRjeIQ==",
   "success": true,
-  "projectFilePath": "C:\\tmp\\sockets-with-thread\\AsyncNetClient\\AsyncNetClient.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "C:\\Sources\\sockets-with-thread\\AsyncNetClient\\AsyncNetClient.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\5.0.13\\microsoft.netcore.app.host.win-x64.5.0.13.nupkg.sha512",
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\5.0.0\\microsoft.aspnetcore.app.ref.5.0.0.nupkg.sha512",
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\5.0.0\\microsoft.windowsdesktop.app.ref.5.0.0.nupkg.sha512",
+    "C:\\Users\\Loic\\.nuget\\packages\\microsoft.netcore.app.ref\\5.0.0\\microsoft.netcore.app.ref.5.0.0.nupkg.sha512"
+  ],
   "logs": []
 }
